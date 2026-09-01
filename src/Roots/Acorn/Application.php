@@ -28,7 +28,7 @@ class Application extends FoundationApplication
      *
      * @var string
      */
-    public const VERSION = '5.x-dev';
+    public const VERSION = '6.x-dev';
 
     /**
      * The custom resource path defined by the developer.
@@ -64,7 +64,7 @@ class Application extends FoundationApplication
     /**
      * Begin configuring a new Laravel application instance.
      *
-     * @return \Roots\Acorn\Configuration\ApplicationBuilder
+     * @return ApplicationBuilder
      */
     public static function configure(?string $basePath = null)
     {
@@ -106,7 +106,7 @@ class Application extends FoundationApplication
      */
     public function environmentPath(): string
     {
-        return is_file($envPath = (new Filesystem)->closest($this->basePath(), '.env') ?? '')
+        return is_file($envPath = (new Filesystem())->closest($this->basePath(), '.env') ?? '')
             ? dirname($envPath)
             : $this->basePath();
     }
@@ -118,7 +118,7 @@ class Application extends FoundationApplication
      */
     protected function registerGlobalHelpers()
     {
-        require_once dirname(__DIR__, 2).'/Illuminate/Foundation/helpers.php';
+        require_once dirname(__DIR__, 2) . '/Illuminate/Foundation/helpers.php';
     }
 
     /**
@@ -182,16 +182,12 @@ class Application extends FoundationApplication
         $this->instance('path.storage', $this->storagePath());
 
         $this->useBootstrapPath(value(function () {
-            return is_dir($directory = $this->basePath('.laravel'))
-                ? $directory
-                : $this->bootstrapPath();
+            return is_dir($directory = $this->basePath('.laravel')) ? $directory : $this->bootstrapPath();
         }));
 
-        $this->useLangPath(value(
-            fn () => is_dir($directory = $this->resourcePath('lang'))
-                ? $directory
-                : $this->basePath('lang')
-        ));
+        $this->useLangPath(value(fn () => is_dir($directory = $this->resourcePath('lang'))
+            ? $directory
+            : $this->basePath('lang')));
     }
 
     /**
@@ -251,28 +247,32 @@ class Application extends FoundationApplication
     protected function registerPackageManifest()
     {
         $this->singleton(FoundationPackageManifest::class, function () {
-            $files = new Filesystem;
+            $files = new Filesystem();
+
+            $closestComposer = $files->closest(WP_CONTENT_DIR, 'composer.json');
+            $contentRoot = $closestComposer ? dirname($closestComposer) : null;
+
+            $composerPaths = apply_filters('acorn/composer_paths', array_filter([
+                $this->basePath(),
+                $contentRoot,
+                get_template_directory(),
+                get_stylesheet_directory(),
+            ]));
 
             $composerPaths = collect(get_option('active_plugins'))
-                ->map(fn ($plugin) => WP_PLUGIN_DIR.DIRECTORY_SEPARATOR.dirname($plugin))
-                ->merge([
-                    $this->basePath(),
-                    dirname(WP_CONTENT_DIR, 2),
-                    get_template_directory(),
-                    get_stylesheet_directory(),
-                ])
+                ->map(fn ($plugin) => WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname($plugin))
+                ->merge((array) $composerPaths)
                 ->map(fn ($path) => rtrim($files->normalizePath($path), '/'))
                 ->unique()
                 ->filter(
-                    fn ($path) => @$files->isFile("{$path}/vendor/composer/installed.json") &&
-                        @$files->isFile("{$path}/composer.json")
-                )->all();
+                    fn ($path) => (
+                        @$files->isFile("{$path}/vendor/composer/installed.json")
+                        && @$files->isFile("{$path}/composer.json")
+                    ),
+                )
+                ->all();
 
-            return new PackageManifest(
-                $files,
-                $composerPaths,
-                $this->getCachedPackagesPath()
-            );
+            return new PackageManifest($files, $composerPaths, $this->getCachedPackagesPath());
         });
 
         $this->alias(FoundationPackageManifest::class, PackageManifest::class);
@@ -285,7 +285,10 @@ class Application extends FoundationApplication
      */
     public function isDownForMaintenance()
     {
-        return is_file($this->storagePath().'/framework/down') || (defined('ABSPATH') && is_file(constant('ABSPATH').'/.maintenance'));
+        return (
+            is_file($this->storagePath() . '/framework/down')
+            || defined('ABSPATH') && is_file(constant('ABSPATH') . '/.maintenance')
+        );
     }
 
     /**
@@ -323,12 +326,15 @@ class Application extends FoundationApplication
     {
         $providers = Collection::make($this->make('config')->get('app.providers'))
             ->filter(fn ($provider) => class_exists($provider))
-            ->partition(fn ($provider) => str_starts_with($provider, 'Illuminate\\') || str_starts_with($provider, 'Roots\\'));
+            ->partition(
+                fn ($provider) => str_starts_with($provider, 'Illuminate\\') || str_starts_with($provider, 'Roots\\'),
+            );
 
         $providers->splice(1, 0, [$this->make(PackageManifest::class)->providers()]);
 
-        (new ProviderRepository($this, new Filesystem, $this->getCachedServicesPath()))
-            ->load($providers->collapse()->toArray());
+        (new ProviderRepository($this, new Filesystem(), $this->getCachedServicesPath()))->load(
+            $providers->collapse()->toArray(),
+        );
 
         $this->fireAppCallbacks($this->registeredCallbacks);
     }
@@ -336,9 +342,9 @@ class Application extends FoundationApplication
     /**
      * Register a service provider with the application.
      *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
+     * @param  ServiceProvider|string  $provider
      * @param  bool  $force
-     * @return \Illuminate\Support\ServiceProvider
+     * @return ServiceProvider
      */
     public function register($provider, $force = false)
     {
@@ -356,7 +362,7 @@ class Application extends FoundationApplication
     /**
      * Skip booting service provider and log error.
      *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
+     * @param  ServiceProvider|string  $provider
      */
     protected function skipProvider($provider, Throwable $e): ServiceProvider
     {
@@ -364,9 +370,11 @@ class Application extends FoundationApplication
 
         if (! $e instanceof SkipProviderException) {
             $error = get_class($e);
-            $message = [
-                BindingResolutionException::class => "Skipping provider [{$providerName}] because it requires a dependency that cannot be found.",
-            ][$error] ?? "Skipping provider [{$providerName}] because it encountered an error [{$error}]: {$e->getMessage()}";
+            $message =
+                [
+                    BindingResolutionException::class => "Skipping provider [{$providerName}] because it requires a dependency that cannot be found.",
+                ][$error]
+                ?? "Skipping provider [{$providerName}] because it encountered an error [{$error}]: {$e->getMessage()}";
 
             $e = new SkipProviderException($message, 0, $e);
         }
@@ -381,10 +389,13 @@ class Application extends FoundationApplication
             $this->booted(fn () => throw $e);
         }
 
-        return is_object($provider) ? $provider : new class($this) extends ServiceProvider
-        {
-            //
-        };
+        return (
+            is_object($provider)
+                ? $provider
+                : new class($this) extends ServiceProvider {
+                    //
+                }
+        );
     }
 
     /**
@@ -392,7 +403,7 @@ class Application extends FoundationApplication
      *
      * @return string
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     public function getNamespace()
     {
@@ -404,7 +415,7 @@ class Application extends FoundationApplication
 
         foreach ((array) data_get($composer, 'autoload.psr-4') as $namespace => $path) {
             foreach ((array) $path as $pathChoice) {
-                if (realpath($this->path()) === realpath(dirname($composerPath).DIRECTORY_SEPARATOR.$pathChoice)) {
+                if (realpath($this->path()) === realpath(dirname($composerPath) . DIRECTORY_SEPARATOR . $pathChoice)) {
                     return $this->namespace = $namespace;
                 }
             }
@@ -424,7 +435,7 @@ class Application extends FoundationApplication
      */
     protected function getAppComposer(): string
     {
-        return (new Filesystem)->closest($this->path(), 'composer.json') ?? $this->basePath('composer.json');
+        return (new Filesystem())->closest($this->path(), 'composer.json') ?? $this->basePath('composer.json');
     }
 
     /**
@@ -435,7 +446,7 @@ class Application extends FoundationApplication
      */
     public function useNamespace($namespace)
     {
-        $this->namespace = trim($namespace, '\\').'\\';
+        $this->namespace = trim($namespace, '\\') . '\\';
 
         return $this;
     }
@@ -447,6 +458,6 @@ class Application extends FoundationApplication
      */
     public function version()
     {
-        return 'Acorn '.static::VERSION.' (Laravel '.parent::VERSION.')';
+        return 'Acorn ' . static::VERSION . ' (Laravel ' . parent::VERSION . ')';
     }
 }

@@ -2,6 +2,7 @@
 
 use Illuminate\Config\Repository as Config;
 use Illuminate\Contracts\Foundation\Application as ApplicationContract;
+use Mockery\MockInterface;
 use Roots\Acorn\Bootstrap\HandleExceptions;
 use Roots\Acorn\Tests\Test\TestCase;
 
@@ -16,14 +17,11 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    /** @var \Mockery\MockInterface|ApplicationContract */
+    /** @var MockInterface|ApplicationContract */
     $this->application = mock(ApplicationContract::class);
-    $this->application
-        ->shouldIgnoreMissing()
-        ->shouldreceive('runningInConsole')
-        ->andReturn(false);
+    $this->application->shouldIgnoreMissing()->shouldreceive('runningInConsole')->andReturn(false);
     $this->application->config = new Config(['app' => ['debug' => true]]);
-    $this->handleExceptions = new HandleExceptions;
+    $this->handleExceptions = new HandleExceptions();
 });
 
 it('registers error handler', function () {

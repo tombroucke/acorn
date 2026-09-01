@@ -3,11 +3,14 @@
 namespace Roots\Acorn\Configuration;
 
 use Closure;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Foundation\Bootstrap\RegisterProviders;
 use Illuminate\Foundation\Configuration\ApplicationBuilder as FoundationApplicationBuilder;
 use Roots\Acorn\Application;
 use Roots\Acorn\Configuration\Concerns\Paths;
+use Roots\Acorn\Exceptions\Handler;
 
 class ApplicationBuilder extends FoundationApplicationBuilder
 {
@@ -25,15 +28,9 @@ class ApplicationBuilder extends FoundationApplicationBuilder
      */
     public function withKernels()
     {
-        $this->app->singleton(
-            \Illuminate\Contracts\Http\Kernel::class,
-            \Roots\Acorn\Http\Kernel::class
-        );
+        $this->app->singleton(Kernel::class, \Roots\Acorn\Http\Kernel::class);
 
-        $this->app->singleton(
-            \Illuminate\Contracts\Console\Kernel::class,
-            \Roots\Acorn\Console\Kernel::class
-        );
+        $this->app->singleton(\Illuminate\Contracts\Console\Kernel::class, \Roots\Acorn\Console\Kernel::class);
 
         return $this;
     }
@@ -45,17 +42,11 @@ class ApplicationBuilder extends FoundationApplicationBuilder
      */
     public function withExceptions(?callable $using = null)
     {
-        $this->app->singleton(
-            \Illuminate\Contracts\Debug\ExceptionHandler::class,
-            \Roots\Acorn\Exceptions\Handler::class,
-        );
+        $this->app->singleton(ExceptionHandler::class, Handler::class);
 
         $using ??= fn () => true;
 
-        $this->app->afterResolving(
-            \Roots\Acorn\Exceptions\Handler::class,
-            fn ($handler) => $using(new Exceptions($handler)),
-        );
+        $this->app->afterResolving(Handler::class, fn ($handler) => $using(new Exceptions($handler)));
 
         return $this;
     }
@@ -65,7 +56,8 @@ class ApplicationBuilder extends FoundationApplicationBuilder
      *
      * @return $this
      */
-    public function withRouting(?Closure $using = null,
+    public function withRouting(
+        ?Closure $using = null,
         array|string|null $web = null,
         array|string|null $api = null,
         ?string $commands = null,
@@ -74,8 +66,8 @@ class ApplicationBuilder extends FoundationApplicationBuilder
         ?string $health = null,
         string $apiPrefix = 'api',
         ?callable $then = null,
-        bool $wordpress = false)
-    {
+        bool $wordpress = false,
+    ) {
         if (! $web && file_exists($path = base_path('routes/web.php'))) {
             $web = $path;
         }
@@ -108,7 +100,7 @@ class ApplicationBuilder extends FoundationApplicationBuilder
     public function withMiddleware(?callable $callback = null)
     {
         $this->app->afterResolving(HttpKernel::class, function ($kernel) use ($callback) {
-            $middleware = new Middleware;
+            $middleware = new Middleware();
 
             if (! is_null($callback)) {
                 $callback($middleware);
@@ -147,15 +139,10 @@ class ApplicationBuilder extends FoundationApplicationBuilder
      */
     public function withProviders(array $providers = [], bool $withBootstrapProviders = true)
     {
-        RegisterProviders::merge(
-            $providers,
-            $withBootstrapProviders
-                ? $this->app->getBootstrapProvidersPath()
-                : null
-        );
+        RegisterProviders::merge($providers, $withBootstrapProviders ? $this->app->getBootstrapProvidersPath() : null);
 
         $this->config['providers'] = [
-            ...$this->config['providers'] ?? [],
+            ...($this->config['providers'] ?? []),
             ...$providers,
         ];
 
@@ -165,7 +152,7 @@ class ApplicationBuilder extends FoundationApplicationBuilder
     /**
      * Get the application instance.
      *
-     * @return \Roots\Acorn\Application
+     * @return Application
      */
     public function create()
     {
@@ -175,7 +162,7 @@ class ApplicationBuilder extends FoundationApplicationBuilder
     /**
      * Boot the application.
      *
-     * @return \Roots\Acorn\Application
+     * @return Application
      */
     public function boot()
     {

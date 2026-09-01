@@ -44,7 +44,10 @@ trait Extractable
             $reflection = new ReflectionClass($this);
 
             static::$propertyCache[$class] = collect($reflection->getProperties(ReflectionProperty::IS_PUBLIC))
-                ->reject(fn (ReflectionProperty $property) => $property->isStatic() || $this->shouldIgnore($property->getName()))
+                ->reject(
+                    fn (ReflectionProperty $property) => $property->isStatic()
+                    || $this->shouldIgnore($property->getName()),
+                )
                 ->map(fn (ReflectionProperty $property) => $property->getName())
                 ->all();
         }
@@ -91,15 +94,17 @@ trait Extractable
      */
     protected function createVariableFromMethod(ReflectionMethod $method)
     {
-        return $method->getNumberOfParameters() === 0
-            ? $this->createInvokableVariable($method->getName())
-            : Closure::fromCallable([$this, $method->getName()]);
+        return (
+            $method->getNumberOfParameters() === 0
+                ? $this->createInvokableVariable($method->getName())
+                : Closure::fromCallable([$this, $method->getName()])
+        );
     }
 
     /**
      * Create an invokable, toStringable variable for the given class method.
      *
-     * @return \Illuminate\View\InvokableComponentVariable
+     * @return InvokableComponentVariable
      */
     protected function createInvokableVariable(string $method)
     {

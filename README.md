@@ -6,9 +6,8 @@
 
 <p align="center">
   <a href="https://packagist.org/packages/roots/acorn"><img alt="Packagist Downloads" src="https://img.shields.io/packagist/dt/roots/acorn?label=downloads&colorB=2b3072&colorA=525ddc&style=flat-square"></a>
-  <a href="https://laravel.com/docs/12.x"><img alt="Laravel v12" src="https://img.shields.io/static/v1?label=laravel&message=v12&logo=Laravel&style=flat-square&color=f9322c"></a>
+  <a href="https://laravel.com/docs/13.x"><img alt="Laravel v13" src="https://img.shields.io/static/v1?label=laravel&message=v13&logo=Laravel&style=flat-square&color=f9322c"></a>
   <a href="https://github.com/roots/acorn/actions/workflows/main.yml"><img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/roots/acorn/main.yml?branch=main&logo=github&label=CI&style=flat-square"></a>
-  <a href="https://bsky.app/profile/roots.dev"><img alt="Follow roots.dev on Bluesky" src="https://img.shields.io/badge/follow-@roots.dev-0085ff?logo=bluesky&style=flat-square"></a>
   <a href="https://twitter.com/rootswp"><img alt="Follow Roots" src="https://img.shields.io/badge/follow%20@rootswp-1da1f2?logo=twitter&logoColor=ffffff&message=&style=flat-square"></a>
   <a href="https://github.com/sponsors/roots"><img src="https://img.shields.io/badge/sponsor%20roots-525ddc?logo=github&style=flat-square&logoColor=ffffff&message=" alt="Sponsor Roots"></a>
 </p>
@@ -30,14 +29,15 @@ Acorn gives you access to most Laravel components out of the box, including rout
 
 ## Support us
 
-We're dedicated to pushing modern WordPress development forward through our open source projects, and we need your support to keep building. You can support our work by purchasing [Radicle](https://roots.io/radicle/), our recommended WordPress stack, or by [sponsoring us on GitHub](https://github.com/sponsors/roots). Every contribution directly helps us create better tools for the WordPress ecosystem.
+Roots is an independent open source org, supported only by developers like you. Your sponsorship funds [WP Packages](https://wp-packages.org/) and the entire Roots ecosystem, and keeps them independent. Support us by purchasing [Radicle](https://roots.io/radicle/) or [sponsoring us on GitHub](https://github.com/sponsors/roots) — sponsors get access to our private Discord.
 
 ### Sponsors
 
-<a href="https://carrot.com/"><img src="https://cdn.roots.io/app/uploads/carrot.svg" alt="Carrot" width="120" height="90"></a> <a href="https://wordpress.com/"><img src="https://cdn.roots.io/app/uploads/wordpress.svg" alt="WordPress.com" width="120" height="90"></a> <a href="https://www.itineris.co.uk/"><img src="https://cdn.roots.io/app/uploads/itineris.svg" alt="Itineris" width="120" height="90"></a> <a href="https://kinsta.com/?kaid=OFDHAJIXUDIV"><img src="https://cdn.roots.io/app/uploads/kinsta.svg" alt="Kinsta" width="120" height="90"></a>
+<a href="https://carrot.com/"><img src="https://cdn.roots.io/app/uploads/carrot.svg" alt="Carrot" height="90"></a> <a href="https://wordpress.com/"><img src="https://cdn.roots.io/app/uploads/wordpress.svg" alt="WordPress.com" height="90"></a> <a href="https://www.itineris.co.uk/"><img src="https://cdn.roots.io/app/uploads/itineris.svg" alt="Itineris" height="90"></a> <a href="https://kinsta.com/?kaid=OFDHAJIXUDIV"><img src="https://cdn.roots.io/app/uploads/kinsta.svg" alt="Kinsta" height="90"></a>
 
 ## Supported Laravel components
 
+* `illuminate/auth`
 * `illuminate/bus`
 * `illuminate/cache`
 * `illuminate/collections`
@@ -46,6 +46,7 @@ We're dedicated to pushing modern WordPress development forward through our open
 * `illuminate/console`
 * `illuminate/container`
 * `illuminate/contracts`
+* `illuminate/cookie`
 * `illuminate/database`
 * `illuminate/encryption`
 * `illuminate/events`
@@ -54,6 +55,7 @@ We're dedicated to pushing modern WordPress development forward through our open
 * `illuminate/http`
 * `illuminate/log`
 * `illuminate/macroable`
+* `illuminate/pagination`
 * `illuminate/pipeline`
 * `illuminate/queue`
 * `illuminate/routing`
@@ -65,14 +67,20 @@ We're dedicated to pushing modern WordPress development forward through our open
 <details>
   <summary><b>Unsupported components</b></summary>
 
-  * `illuminate/auth`
   * `illuminate/broadcasting`
-  * `illuminate/cookie`
   * `illuminate/mail`
   * `illuminate/notifications`
-  * `illuminate/pagination` ([Available via Log1x/pagi](https://github.com/Log1x/pagi))
   * `illuminate/redis`
-  * `illuminate/testing`
   * `illuminate/translation`
-  
+
 </details>
+
+## Community
+
+Keep track of development and community news.
+
+- Join us on Discord by [sponsoring us on GitHub](https://github.com/sponsors/roots)
+- Join us on [Roots Discourse](https://discourse.roots.io/)
+- Follow [@rootswp on Twitter](https://twitter.com/rootswp)
+- Follow the [Roots Blog](https://roots.io/blog/)
+- Subscribe to the [Roots Newsletter](https://roots.io/subscribe/)

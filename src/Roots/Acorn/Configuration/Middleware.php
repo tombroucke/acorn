@@ -2,7 +2,24 @@
 
 namespace Roots\Acorn\Configuration;
 
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Configuration\Middleware as FoundationMiddleware;
+use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Http\Middleware\SetCacheHeaders;
+use Illuminate\Http\Middleware\TrustHosts;
+use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Http\Middleware\ValidatePostSize;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
+use Illuminate\Routing\Middleware\ValidateSignature;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Roots\Acorn\Session\Middleware\StartSession;
+use Spark\Http\Middleware\VerifyBillableIsSubscribed;
 
 class Middleware extends FoundationMiddleware
 {
@@ -24,25 +41,21 @@ class Middleware extends FoundationMiddleware
     public function getGlobalMiddleware()
     {
         $middleware = $this->global ?: array_values(array_filter([
-            $this->trustHosts ? \Illuminate\Http\Middleware\TrustHosts::class : null,
-            \Illuminate\Http\Middleware\TrustProxies::class,
-            \Illuminate\Http\Middleware\HandleCors::class,
-            \Illuminate\Http\Middleware\ValidatePostSize::class,
-            \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+            $this->trustHosts ? TrustHosts::class : null,
+            TrustProxies::class,
+            HandleCors::class,
+            ValidatePostSize::class,
+            ConvertEmptyStringsToNull::class,
         ]));
 
         $middleware = array_map(function ($middleware) {
-            return isset($this->replacements[$middleware])
-                ? $this->replacements[$middleware]
-                : $middleware;
+            return isset($this->replacements[$middleware]) ? $this->replacements[$middleware] : $middleware;
         }, $middleware);
 
-        return array_values(array_filter(
-            array_diff(
-                array_unique(array_merge($this->prepends, $middleware, $this->appends)),
-                $this->removals
-            )
-        ));
+        return array_values(array_filter(array_diff(
+            array_unique(array_merge($this->prepends, $middleware, $this->appends)),
+            $this->removals,
+        )));
     }
 
     /**
@@ -50,8 +63,12 @@ class Middleware extends FoundationMiddleware
      *
      * @return $this
      */
-    public function wordpress(array|string $append = [], array|string $prepend = [], array|string $remove = [], array $replace = [])
-    {
+    public function wordpress(
+        array|string $append = [],
+        array|string $prepend = [],
+        array|string $remove = [],
+        array $replace = [],
+    ) {
         return $this->modifyGroup('wordpress', $append, $prepend, $remove, $replace);
     }
 
@@ -65,18 +82,18 @@ class Middleware extends FoundationMiddleware
         $middleware = [
             'web' => array_values(array_filter([
                 // \Illuminate\Cookie\Middleware\EncryptCookies::class,
-                \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-                \Illuminate\Session\Middleware\StartSession::class,
-                \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-                // \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
-                \Illuminate\Routing\Middleware\SubstituteBindings::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                ShareErrorsFromSession::class,
+                // \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+                SubstituteBindings::class,
                 $this->authenticatedSessions ? 'auth.session' : null,
             ])),
 
             'api' => array_values(array_filter([
-                $this->statefulApi ? \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class : null,
-                $this->apiLimiter ? 'throttle:'.$this->apiLimiter : null,
-                \Illuminate\Routing\Middleware\SubstituteBindings::class,
+                $this->statefulApi ? EnsureFrontendRequestsAreStateful::class : null,
+                $this->apiLimiter ? 'throttle:' . $this->apiLimiter : null,
+                SubstituteBindings::class,
             ])),
         ];
 
@@ -86,28 +103,30 @@ class Middleware extends FoundationMiddleware
 
         foreach ($middleware as $group => $groupedMiddleware) {
             foreach ($groupedMiddleware as $index => $groupMiddleware) {
-                if (isset($this->groupReplacements[$group][$groupMiddleware])) {
-                    $middleware[$group][$index] = $this->groupReplacements[$group][$groupMiddleware];
+                if (! isset($this->groupReplacements[$group][$groupMiddleware])) {
+                    continue;
                 }
+
+                $middleware[$group][$index] = $this->groupReplacements[$group][$groupMiddleware];
             }
         }
 
         foreach ($this->groupRemovals as $group => $removals) {
-            $middleware[$group] = array_values(array_filter(
-                array_diff($middleware[$group] ?? [], $removals)
-            ));
+            $middleware[$group] = array_values(array_filter(array_diff($middleware[$group] ?? [], $removals)));
         }
 
         foreach ($this->groupPrepends as $group => $prepends) {
-            $middleware[$group] = array_values(array_filter(
-                array_unique(array_merge($prepends, $middleware[$group] ?? []))
-            ));
+            $middleware[$group] = array_values(array_filter(array_unique(array_merge(
+                $prepends,
+                $middleware[$group] ?? [],
+            ))));
         }
 
         foreach ($this->groupAppends as $group => $appends) {
-            $middleware[$group] = array_values(array_filter(
-                array_unique(array_merge($middleware[$group] ?? [], $appends))
-            ));
+            $middleware[$group] = array_values(array_filter(array_unique(array_merge(
+                $middleware[$group] ?? [],
+                $appends,
+            ))));
         }
 
         return $middleware;
@@ -123,21 +142,19 @@ class Middleware extends FoundationMiddleware
         $aliases = [
             // 'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             // 'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-            'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
-            'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+            'auth.session' => AuthenticateSession::class,
+            'cache.headers' => SetCacheHeaders::class,
             // 'can' => \Illuminate\Auth\Middleware\Authorize::class,
             // 'guest' => \Illuminate\Auth\Middleware\RedirectIfAuthenticated::class,
             // 'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
-            'precognitive' => \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
-            'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
-            'throttle' => $this->throttleWithRedis
-                ? \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class
-                : \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            'precognitive' => HandlePrecognitiveRequests::class,
+            'signed' => ValidateSignature::class,
+            'throttle' => $this->throttleWithRedis ? ThrottleRequestsWithRedis::class : ThrottleRequests::class,
             // 'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         ];
 
-        if (class_exists(\Spark\Http\Middleware\VerifyBillableIsSubscribed::class)) {
-            $aliases['subscribed'] = \Spark\Http\Middleware\VerifyBillableIsSubscribed::class;
+        if (class_exists(VerifyBillableIsSubscribed::class)) {
+            $aliases['subscribed'] = VerifyBillableIsSubscribed::class;
         }
 
         return $aliases;

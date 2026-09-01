@@ -64,7 +64,7 @@ class ViewServiceProvider extends ViewServiceProviderBase
             foreach ($app['config']['view.namespaces'] as $namespace => $hints) {
                 $hints = array_merge(
                     array_map(fn ($path) => "{$path}/vendor/{$namespace}", $finder->getPaths()),
-                    (array) $hints
+                    (array) $hints,
                 );
 
                 $finder->addNamespace($namespace, $hints);
@@ -97,9 +97,7 @@ class ViewServiceProvider extends ViewServiceProviderBase
             /** @var Engine $engine */
             $engine = $this->getEngine();
 
-            return ($engine instanceof CompilerEngine)
-                ? $engine->getCompiler()->getCompiledPath($file)
-                : $file;
+            return $engine instanceof CompilerEngine ? $engine->getCompiler()->getCompiledPath($file) : $file;
         });
 
         /**
@@ -114,8 +112,9 @@ class ViewServiceProvider extends ViewServiceProviderBase
             $compiledPath = $app['config']['view.compiled'];
             $compiledExtension = $app['config']->get('view.compiled_extension', 'php');
 
-            $content = "<?= \\Roots\\view('{$view}', \$data ?? get_defined_vars())->render(); ?>"
-                ."\n<?php /**PATH {$path} ENDPATH**/ ?>";
+            $content =
+                "<?= \\Roots\\view('{$view}', \$data ?? get_defined_vars())->render(); ?>"
+                . "\n<?php /**PATH {$path} ENDPATH**/ ?>";
 
             if (! file_exists($loader = "{$compiledPath}/{$id}-loader.{$compiledExtension}")) {
                 file_put_contents($loader, $content);
@@ -183,18 +182,17 @@ class ViewServiceProvider extends ViewServiceProviderBase
 
         $namespace = $this->app->getNamespace();
 
-        // TODO: This should be cacheable, perhaps via `wp acorn` command
-        foreach ((new Finder)->in($path)->files() as $composer) {
-            $composer = $namespace.str_replace(
-                ['/', '.php'],
-                ['\\', ''],
-                Str::after($composer->getPathname(), $this->app->path().DIRECTORY_SEPARATOR)
-            );
+        // TODO(@QWp6t): This should be cacheable, perhaps via `wp acorn` command
+        foreach ((new Finder())->in($path)->files() as $composer) {
+            $composer =
+                $namespace
+                . str_replace(
+                    ['/', '.php'],
+                    ['\\', ''],
+                    Str::after($composer->getPathname(), $this->app->path() . DIRECTORY_SEPARATOR),
+                );
 
-            if (
-                is_subclass_of($composer, Composer::class) &&
-                ! (new ReflectionClass($composer))->isAbstract()
-            ) {
+            if (is_subclass_of($composer, Composer::class) && ! (new ReflectionClass($composer))->isAbstract()) {
                 $this->view()->composer($composer::views(), $composer);
             }
         }

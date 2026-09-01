@@ -32,14 +32,15 @@ class WhoopsHandler extends FoundationWhoopsHandler
     /**
      * Create a new Whoops handler for debug mode.
      *
-     * @return \Whoops\Handler\PrettyPageHandler
+     * @return PrettyPageHandler
      */
     public function forDebug()
     {
-        return tap(new PrettyPageHandler, function ($handler) {
+        return tap(new PrettyPageHandler(), function ($handler) {
             $handler->handleUnconditionally(true);
 
-            $this->registerApplicationPaths($handler)
+            $this
+                ->registerApplicationPaths($handler)
                 ->registerBlacklist($handler)
                 ->registerEditor($handler)
                 ->registerWordPressData($handler);
@@ -49,7 +50,7 @@ class WhoopsHandler extends FoundationWhoopsHandler
     /**
      * Registers WordPress context with the handler
      *
-     * @param  \Whoops\Handler\PrettyPageHandler  $handler
+     * @param  PrettyPageHandler  $handler
      * @return static
      */
     protected function registerWordPressData($handler)
@@ -75,11 +76,7 @@ class WhoopsHandler extends FoundationWhoopsHandler
                     return [];
                 }
 
-                return Collection::make(get_object_vars($wp_query))
-                    ->forget('posts')
-                    ->forget('post')
-                    ->filter()
-                    ->all();
+                return Collection::make(get_object_vars($wp_query))->forget('posts')->forget('post')->filter()->all();
             })
             ->addDataTableCallback(sprintf('%s Data', WP_Post::class), function () {
                 $post = get_post();
@@ -97,7 +94,7 @@ class WhoopsHandler extends FoundationWhoopsHandler
     /**
      * Register the blacklist with the handler.
      *
-     * @param  \Whoops\Handler\PrettyPageHandler  $handler
+     * @param  PrettyPageHandler  $handler
      * @return static
      */
     protected function registerBlacklist($handler)

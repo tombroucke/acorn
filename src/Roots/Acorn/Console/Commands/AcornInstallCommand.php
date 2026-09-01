@@ -25,6 +25,13 @@ class AcornInstallCommand extends Command
     protected $description = 'Install Acorn into the application';
 
     /**
+     * The Acorn repository URL.
+     *
+     * @var string
+     */
+    protected $repoUrl = 'https://github.com/roots/acorn';
+
+    /**
      * Execute the console command.
      */
     public function handle(): int
@@ -45,10 +52,10 @@ class AcornInstallCommand extends Command
             return;
         }
 
-        if ($this->option('autoload') || confirm(
-            label: 'Would you like to install the Acorn autoload dump script?',
-            default: true,
-        )) {
+        if (
+            $this->option('autoload')
+            || confirm(label: 'Would you like to install the Acorn autoload dump script?', default: true)
+        ) {
             $this->installAutoloadDump();
         }
     }
@@ -71,7 +78,7 @@ class AcornInstallCommand extends Command
 
         $script = 'Roots\\Acorn\\ComposerScripts::postAutoloadDump';
 
-        if (in_array($script, $configuration['scripts']['post-autoload-dump'] ?? [])) {
+        if (in_array($script, $configuration['scripts']['post-autoload-dump'] ?? [], true)) {
             return;
         }
 
@@ -83,10 +90,7 @@ class AcornInstallCommand extends Command
             ->append(PHP_EOL)
             ->toString();
 
-        file_put_contents(
-            $composer,
-            $configuration,
-        );
+        file_put_contents($composer, $configuration);
     }
 
     /**
@@ -98,10 +102,7 @@ class AcornInstallCommand extends Command
             return;
         }
 
-        if ($this->option('init') || confirm(
-            label: 'Would you like to initialize Acorn?',
-            default: true,
-        )) {
+        if ($this->option('init') || confirm(label: 'Would you like to initialize Acorn?', default: true)) {
             $this->callSilent('acorn:init', ['--base' => $this->getLaravel()->basePath()]);
         }
     }
@@ -115,15 +116,25 @@ class AcornInstallCommand extends Command
             return;
         }
 
-        if (confirm(
-            label: '🎉 All done! Would you like to show love by starring Acorn on GitHub?',
-            default: true,
-        )) {
-            match (PHP_OS_FAMILY) {
-                'Darwin' => exec('open https://github.com/roots/acorn'),
-                'Linux' => exec('xdg-open https://github.com/roots/acorn'),
-                'Windows' => exec('start https://github.com/roots/acorn'),
+        if (confirm(label: '🎉 All done! Would you like to show love by starring Acorn on GitHub?', default: true)) {
+            $command = match (PHP_OS_FAMILY) {
+                'Darwin' => 'open ' . escapeshellarg($this->repoUrl) . ' 2>/dev/null',
+                'Linux' => 'xdg-open ' . escapeshellarg($this->repoUrl) . ' 2>/dev/null',
+                'Windows' => 'cmd /c start "" "' . addcslashes($this->repoUrl, '"') . '" 2>nul',
+                default => null,
             };
+
+            $opened = false;
+
+            if ($command) {
+                exec($command, result_code: $code);
+                $opened = $code === 0;
+            }
+
+            if (! $opened) {
+                $this->components->info('Please visit this URL to star the repository:');
+                $this->components->info($this->repoUrl);
+            }
 
             $this->components->info('Thank you!');
         }

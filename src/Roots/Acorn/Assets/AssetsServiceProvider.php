@@ -19,7 +19,9 @@ class AssetsServiceProvider extends ServiceProvider
             return new Manager($this->app->make('config')->get('assets'));
         });
 
-        $this->app->singleton('assets.vite', Vite::class);
+        $this->app->singleton(Vite::class);
+
+        $this->app->alias(Vite::class, 'assets.vite');
 
         $this->app->alias(Vite::class, FoundationVite::class);
 
@@ -27,7 +29,7 @@ class AssetsServiceProvider extends ServiceProvider
             return $app['assets']->manifest($this->getDefaultManifest());
         });
 
-        $this->app->alias('assets.manifest', \Roots\Acorn\Assets\Manifest::class);
+        $this->app->alias('assets.manifest', Manifest::class);
     }
 
     /**
@@ -38,9 +40,12 @@ class AssetsServiceProvider extends ServiceProvider
     public function boot()
     {
         if ($this->app->bound('view')) {
-            $this->app->make('view')
-                ->getEngineResolver()->resolve('blade')->getCompiler()
-                ->directive('asset', new BladeDirective);
+            $this->app
+                ->make('view')
+                ->getEngineResolver()
+                ->resolve('blade')
+                ->getCompiler()
+                ->directive('asset', new BladeDirective());
         }
     }
 

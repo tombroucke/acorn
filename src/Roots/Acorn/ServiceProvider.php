@@ -9,10 +9,10 @@ final class ServiceProvider extends ServiceProviderBase
     /**
      * Get the default providers for a Acorn application.
      *
-     * @return \Roots\Acorn\DefaultProviders
+     * @return DefaultProviders
      */
     public static function defaultProviders()
     {
-        return new DefaultProviders;
+        return new DefaultProviders();
     }
 }

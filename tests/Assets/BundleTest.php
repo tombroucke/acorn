@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Collection;
 use Roots\Acorn\Assets\Bundle;
+use Roots\Acorn\Tests\Test\Drivers\ObjectDriver;
 use Roots\Acorn\Tests\Test\TestCase;
 
 use function Spatie\Snapshots\assertMatchesJsonSnapshot;
@@ -12,7 +13,10 @@ uses(TestCase::class);
 beforeEach(fn () => Bundle::resetInlinedSources());
 
 it('can get styles and scripts collections', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
     expect($app->js())->toBeInstanceOf(Collection::class);
@@ -23,7 +27,10 @@ it('can get styles and scripts collections', function () {
 });
 
 it('accepts a callback for styles and scripts', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
     $app->js(fn ($handle, $src, $dependencies) => assertMatchesSnapshot(compact('handle', 'src', 'dependencies')));
@@ -32,26 +39,35 @@ it('accepts a callback for styles and scripts', function () {
 });
 
 it('can enqueue css', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
-    $this->stub('wp_enqueue_style', fn (...$args) => assertMatchesSnapshot($args));
+    $this->stub('wp_enqueue_style', fn (...$args) => assertMatchesSnapshot($args, new ObjectDriver()));
 
     $app->enqueueCss();
 });
 
 it('can add editor styles', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
-    $this->stub('get_theme_file_path', fn ($path = '') => $this->fixture('bud_v6_single_runtime/public/'.$path));
+    $this->stub('get_theme_file_path', fn ($path = '') => $this->fixture('bud_v6_single_runtime/public/' . $path));
     $this->stub('add_editor_style', fn (...$args) => assertMatchesSnapshot($args));
 
     $app->editorStyles();
 });
 
 it('can dequeue css', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
     $this->stub('wp_enqueue_style')->shouldBeCalled();
@@ -62,7 +78,10 @@ it('can dequeue css', function () {
 
 it('can silently fail to enqueue css', function () {
     $stub = $this->stub('wp_enqueue_style');
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime_dev/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime_dev/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime_dev'), 'https://k.jo');
 
     $app->enqueueCss();
@@ -71,7 +90,10 @@ it('can silently fail to enqueue css', function () {
 });
 
 it('can enqueue js', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
     $this->stub('wp_enqueue_script', fn (...$args) => assertMatchesSnapshot($args));
@@ -81,7 +103,10 @@ it('can enqueue js', function () {
 });
 
 it('can dequeue js', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
     $this->stub('wp_enqueue_script')->shouldBeCalled();
@@ -93,7 +118,10 @@ it('can dequeue js', function () {
 });
 
 it('can inline a single runtime', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
     $this->stubs([
@@ -101,54 +129,48 @@ it('can inline a single runtime', function () {
         'wp_enqueue_script',
     ]);
 
-    $this->stub('wp_enqueue_script')
-        ->shouldBeCalled()
-        ->zeroOrMoreTimes()
-        ->withAnyArgs();
+    $this->stub('wp_enqueue_script')->shouldBeCalled()->zeroOrMoreTimes()->withAnyArgs();
 
     $app->enqueueJs();
 });
 
 it('can inline multiple runtimes', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_multi_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_multi_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_multi_runtime'), 'https://k.jo');
     $editor = new Bundle('editor', $manifest['editor'], $this->fixture('bud_multi_runtime'), 'https://k.jo');
 
-    $this->stub('wp_add_inline_script')
-        ->shouldBeCalled()
-        ->twice()
-        ->withAnyArgs();
+    $this->stub('wp_add_inline_script')->shouldBeCalled()->twice()->withAnyArgs();
 
-    $this->stub('wp_enqueue_script')
-        ->shouldBeCalled()
-        ->twice()
-        ->withAnyArgs();
+    $this->stub('wp_enqueue_script')->shouldBeCalled()->twice()->withAnyArgs();
 
     $app->enqueueJs();
     $editor->enqueueJs();
 });
 
 it('does not inline duplicate single runtimes', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
     $editor = new Bundle('editor', $manifest['editor'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
-    $this->stub('wp_add_inline_script')
-        ->shouldBeCalled()
-        ->once()
-        ->withAnyArgs();
+    $this->stub('wp_add_inline_script')->shouldBeCalled()->once()->withAnyArgs();
 
-    $this->stub('wp_enqueue_script')
-        ->shouldBeCalled()
-        ->twice()
-        ->withAnyArgs();
+    $this->stub('wp_enqueue_script')->shouldBeCalled()->twice()->withAnyArgs();
 
     $app->enqueueJs();
     $editor->enqueueJs();
 });
 
 it('can conditionally get assets', function () {
-    $manifest = json_decode(file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')), JSON_OBJECT_AS_ARRAY);
+    $manifest = json_decode(
+        file_get_contents($this->fixture('bud_single_runtime/public/entrypoints.json')),
+        JSON_OBJECT_AS_ARRAY,
+    );
     $app = new Bundle('app', $manifest['app'], $this->fixture('bud_single_runtime'), 'https://k.jo');
 
     assertMatchesJsonSnapshot($app->js()->toJson());
